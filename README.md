@@ -130,3 +130,43 @@ All AI operations run as server-side proxy routes via the official `@google/gena
 ✓ Applet Compilation:     compile_applet build succeeded
 ✓ Code Linter:            lint_applet clean (0 lint warnings/errors)
 ```
+
+---
+
+## 9. Google Cloud Run Deployment & Production Operations
+
+### Environment Variables
+| Variable | Required | Description |
+| :--- | :--- | :--- |
+| `GEMINI_API_KEY` | **Yes** | Server-side Gemini API key for semantic synthesis (never exposed to browser) |
+| `PORT` | Optional (default: `3000` or Cloud Run assigned) | Port the Express server listens on (`0.0.0.0`) |
+| `NODE_ENV` | Optional (set to `production` in production) | Enables static asset serving and disables dev Vite middleware |
+
+### Production Run Instructions
+1. **Install dependencies**:
+   ```bash
+   npm install
+   ```
+
+2. **Build the production assets**:
+   ```bash
+   npm run build
+   ```
+
+3. **Start the production server**:
+   ```bash
+   NODE_ENV=production PORT=8080 npm start
+   ```
+
+### Deploying to Google Cloud Run
+Deploy directly from source or via Google Cloud CLI:
+```bash
+gcloud run deploy lexiclear-ai \
+  --source . \
+  --region us-central1 \
+  --allow-unauthenticated \
+  --set-env-vars NODE_ENV=production \
+  --set-secrets GEMINI_API_KEY=projects/YOUR_PROJECT/secrets/gemini-api-key:latest
+```
+*Note: In Google Cloud Run, `PORT` is automatically injected by the environment (defaulting to 8080) and the Express server automatically binds to `0.0.0.0:${PORT}`.*
+
