@@ -1,0 +1,6 @@
+{
+  "name": "LexiClear AI",
+  "description": "AI-powered legal document navigator and attorney-ready briefing studio for plain-English contract analysis.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
