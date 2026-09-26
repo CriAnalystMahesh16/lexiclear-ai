@@ -3,42 +3,41 @@
  * Phase 4 Production & Development Server
  */
 
-import express from 'express';
-import path from 'path';
-import { fileURLToPath } from 'url';
-import { createExpressApp } from './server/app';
+import { spawn } from 'node:child_process';
+import { fileURLToPath } from 'node:url';
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
+// Check if TSX execution loader is already loaded
+const hasTsx = Boolean(
+  process.env.__TSX_ACTIVE === 'true' ||
+  process.execArgv.some((arg) => arg.includes('tsx'))
+);
 
-async function startServer() {
-  const app = createExpressApp();
-  const PORT = parseInt(process.env.PORT || '3000', 10);
-  const isProd = process.env.NODE_ENV === 'production';
+if (!hasTsx) {
+  // Re-exec using node --import tsx to cleanly execute TypeScript ESM without loader issues
+  const currentFile = fileURLToPath(import.meta.url);
+  const child = spawn(
+    process.execPath,
+    ['--import', 'tsx', currentFile, ...process.argv.slice(2)],
+    {
+      stdio: 'inherit',
+      env: {
+        ...process.env,
+        __TSX_ACTIVE: 'true',
+      },
+    }
+  );
 
-  if (!isProd) {
-    // Development mode: dynamically mount Vite middlewares
-    const { createServer: createViteServer } = await import('vite');
-    const vite = await createViteServer({
-      server: { middlewareMode: true },
-      appType: 'spa',
-    });
-    app.use(vite.middlewares);
-  } else {
-    // Production mode: serve static build assets
-    const distPath = path.resolve(__dirname, 'dist');
-    app.use(express.static(distPath));
-    app.get('*', (_req, res) => {
-      res.sendFile(path.resolve(distPath, 'index.html'));
-    });
-  }
-
-  app.listen(PORT, '0.0.0.0', () => {
-    console.log(`LexiClear AI server listening on http://0.0.0.0:${PORT}`);
+  child.on('exit', (code, signal) => {
+    if (signal) {
+      process.kill(process.pid, signal);
+    }
+    process.exit(code ?? 0);
+  });
+} else {
+  // TSX loader active: import and start server runner
+  const { runServer } = await import('./server/serverRunner');
+  runServer().catch((err: unknown) => {
+    console.error('Failed to start server:', err);
+    process.exit(1);
   });
 }
-
-startServer().catch((err) => {
-  console.error('Failed to start server:', err);
-  process.exit(1);
-});
