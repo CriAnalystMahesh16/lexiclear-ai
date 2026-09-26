@@ -4,6 +4,7 @@
  */
 
 import express from 'express';
+import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { createExpressApp } from './app';
@@ -20,28 +21,30 @@ export async function runServer() {
     process.env.APP_PORT || (process.env.PORT && process.env.PORT !== '8080' ? process.env.PORT : '3000'),
     10
   );
-  const isProd = process.env.NODE_ENV === 'production';
+  // Determine whether to serve production dist bundle or mount dynamic Vite
+  const distPath = path.resolve(__dirname, '..', 'dist');
+  const indexPath = path.resolve(distPath, 'index.html');
+  const hasDist = fs.existsSync(indexPath);
+  const isProd = process.env.NODE_ENV === 'production' || hasDist;
 
-  if (!isProd) {
-    // Development mode: dynamically mount Vite middlewares
+  if (hasDist) {
+    // Static assets first
+    app.use(express.static(distPath));
+    // SPA fallback for all non-API GET requests
+    app.get('*', (req, res, next) => {
+      if (req.path.startsWith('/api')) {
+        return next();
+      }
+      res.sendFile(indexPath);
+    });
+  } else if (!isProd) {
+    // Development mode fallback: mount Vite middleware when dist is not built
     const { createServer: createViteServer } = await import('vite');
     const vite = await createViteServer({
       server: { middlewareMode: true },
       appType: 'spa',
     });
     app.use(vite.middlewares);
-  } else {
-    // Production mode: serve static build assets
-    const distPath = path.resolve(__dirname, '..', 'dist');
-    const indexPath = path.resolve(distPath, 'index.html');
-    app.use(express.static(distPath));
-    app.get('*', (req, res, next) => {
-      // Do not intercept /api requests
-      if (req.path.startsWith('/api')) {
-        return next();
-      }
-      res.sendFile(indexPath);
-    });
   }
 
   app.listen(PORT, '0.0.0.0', () => {
