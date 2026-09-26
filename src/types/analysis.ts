@@ -9,7 +9,9 @@ export interface Finding {
   id: string;
   clauseId: string;
   category: RiskCategory;
-  level: RiskLevel;
+  riskLevel?: RiskLevel;
+  /** @deprecated use riskLevel instead */
+  level?: RiskLevel;
   exactQuote: string;
   plainEnglishSummary: string;
   strategicRisk: string;

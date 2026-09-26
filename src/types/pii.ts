@@ -6,6 +6,7 @@ export type PIIType =
   | 'AADHAAR'
   | 'PAN'
   | 'BANK_ACCOUNT'
+  | 'CREDIT_CARD'
   | 'FINANCIAL' 
   | 'ADDRESS';
 

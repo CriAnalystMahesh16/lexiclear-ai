@@ -7,6 +7,7 @@ import {
 import { RiskBadge } from '../common/RiskBadge';
 import { UserPerspective } from '../../types/document';
 import { Finding } from '../../types/analysis';
+import { getMarketBenchmarkForCategory } from '../../engine/marketBenchmarks';
 import { geminiClientService } from '../../services/geminiClientService';
 import { 
   ExplainFindingResponse, 
@@ -76,7 +77,7 @@ export const ClauseInspector: React.FC<ClauseInspectorProps> = ({
         findingId: finding.id,
         perspective,
         category: finding.category,
-        severity: finding.level,
+        severity: finding.riskLevel || finding.level || 'LOW',
         exactExcerpt: finding.exactQuote,
         deterministicExplanation: finding.plainEnglishSummary,
       });
@@ -194,7 +195,7 @@ export const ClauseInspector: React.FC<ClauseInspectorProps> = ({
                   }`}>
                     {finding.category.replace(/_/g, ' ')}
                   </span>
-                  <RiskBadge level={finding.level} showIcon={false} className="text-[9px] py-0 px-1" />
+                  <RiskBadge level={finding.riskLevel || finding.level || 'LOW'} showIcon={false} className="text-[9px] py-0 px-1" />
                 </div>
                 <p className={`text-xs font-medium line-clamp-2 ${
                   isDark ? 'text-slate-200' : 'text-slate-900'
@@ -216,7 +217,7 @@ export const ClauseInspector: React.FC<ClauseInspectorProps> = ({
               <div className="flex flex-wrap items-center justify-between gap-3 border-b pb-4 border-slate-200 dark:border-slate-800">
                 <div>
                   <div className="flex items-center gap-2 mb-1">
-                    <RiskBadge level={activeFinding.level} />
+                    <RiskBadge level={activeFinding.riskLevel || activeFinding.level || 'LOW'} />
                     <span className={`text-xs font-mono uppercase tracking-wider ${
                       isDark ? 'text-slate-400' : 'text-slate-600'
                     }`}>
@@ -412,6 +413,75 @@ export const ClauseInspector: React.FC<ClauseInspectorProps> = ({
                   </div>
                 </div>
               )}
+
+              {/* Market Benchmark & Policy Comparison (Problem Statement Alignment) */}
+              {(() => {
+                const benchmark = getMarketBenchmarkForCategory(activeFinding.category);
+                return (
+                  <div className={`rounded-xl p-4 space-y-3 border ${
+                    isDark ? 'bg-slate-900/60 border-slate-800' : 'bg-slate-50/80 border-slate-200'
+                  }`}>
+                    <div className="flex items-center justify-between">
+                      <h4 className={`text-xs font-semibold uppercase tracking-wider flex items-center gap-2 ${
+                        isDark ? 'text-emerald-400' : 'text-emerald-900'
+                      }`}>
+                        <Scale className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
+                        <span>Market Standard & Policy Benchmark</span>
+                      </h4>
+                      <span className={`px-2 py-0.5 rounded text-[10px] font-mono font-bold uppercase ${
+                        benchmark.estimatedAsymmetryPercent >= 80 
+                          ? 'bg-rose-100 text-rose-800 dark:bg-rose-950 dark:text-rose-300' 
+                          : 'bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300'
+                      }`}>
+                        {benchmark.estimatedAsymmetryPercent}% Asymmetry Variance
+                      </span>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs">
+                      <div className={`p-3 rounded-lg border ${
+                        isDark ? 'bg-slate-950 border-slate-800' : 'bg-white border-slate-200 shadow-2xs'
+                      }`}>
+                        <span className="font-semibold text-emerald-700 dark:text-emerald-400 block mb-1">
+                          Standard Market Norm:
+                        </span>
+                        <p className={isDark ? 'text-slate-300' : 'text-slate-700'}>
+                          {benchmark.marketStandardNorm}
+                        </p>
+                      </div>
+
+                      <div className={`p-3 rounded-lg border ${
+                        isDark ? 'bg-slate-950 border-slate-800' : 'bg-white border-slate-200 shadow-2xs'
+                      }`}>
+                        <span className="font-semibold text-rose-700 dark:text-rose-400 block mb-1">
+                          Current Draft Variance:
+                        </span>
+                        <p className={isDark ? 'text-slate-300' : 'text-slate-700'}>
+                          {benchmark.typicalVariance}
+                        </p>
+                      </div>
+                    </div>
+
+                    {/* Actionable Next Steps & Options */}
+                    <div className="pt-1 space-y-1.5">
+                      <span className={`text-[11px] font-bold uppercase tracking-wider ${
+                        isDark ? 'text-slate-400' : 'text-slate-600'
+                      }`}>
+                        Negotiation Options & Recommended Next Steps:
+                      </span>
+                      <ul className="space-y-1">
+                        {benchmark.keyOptionsAndNextSteps.map((opt, oIdx) => (
+                          <li key={oIdx} className={`text-xs flex items-start gap-1.5 ${
+                            isDark ? 'text-slate-300' : 'text-slate-800'
+                          }`}>
+                            <span className="text-emerald-600 dark:text-emerald-400 font-bold shrink-0">›</span>
+                            <span>{opt}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  </div>
+                );
+              })()}
 
               {/* Suggested Questions for Legal Counsel */}
               <div className={`rounded-xl p-4 space-y-3 border ${

@@ -108,6 +108,8 @@ export interface DeterministicFinding {
   readonly checkId: string;
   readonly category: RiskCategory;
   readonly riskLevel: RiskLevel;
+  /** @deprecated use riskLevel instead */
+  readonly level?: RiskLevel;
   readonly title: string;
   readonly plainEnglishExplanation: string;
   readonly evidence: FindingEvidence;

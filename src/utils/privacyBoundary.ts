@@ -15,6 +15,10 @@ import { SECURITY_LIMITS } from '../models/security.constants';
 const SSN_DETECTION_PATTERN = /\b\d{3}[-\s]\d{2}[-\s]\d{4}\b/;
 const EMAIL_DETECTION_PATTERN = /\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}\b/;
 const PHONE_DETECTION_PATTERN = /(?:\+?1[-.\s]?)?\(?[0-9]{3}\)?[-.\s]?[0-9]{3}[-.\s]?[0-9]{4}\b/;
+const CREDIT_CARD_DETECTION_PATTERN = /\b(?:\d{4}[-\s]?){3}\d{4}\b/;
+const AADHAAR_DETECTION_PATTERN = /\b\d{4}[-\s]\d{4}[-\s]\d{4}\b/;
+const PAN_DETECTION_PATTERN = /\b[A-Z]{5}[0-9]{4}[A-Z]{1}\b/;
+const BANK_ACCOUNT_DETECTION_PATTERN = /\b(?:account\s*(?:number|no\.?|#)?\s*:?\s*)(\d{9,18})\b/i;
 
 export interface PrivacyAuditResult {
   readonly isSafe: boolean;
@@ -26,6 +30,22 @@ export interface PrivacyAuditResult {
  */
 export function auditTextForPiiLeakage(text: string): PrivacyAuditResult {
   const violations: string[] = [];
+
+  if (CREDIT_CARD_DETECTION_PATTERN.test(text)) {
+    violations.push('Direct Credit Card number pattern detected in candidate payload.');
+  }
+
+  if (AADHAAR_DETECTION_PATTERN.test(text)) {
+    violations.push('Direct Aadhaar number pattern detected in candidate payload.');
+  }
+
+  if (PAN_DETECTION_PATTERN.test(text)) {
+    violations.push('Direct Permanent Account Number (PAN) pattern detected in candidate payload.');
+  }
+
+  if (BANK_ACCOUNT_DETECTION_PATTERN.test(text)) {
+    violations.push('Direct Bank Account number pattern detected in candidate payload.');
+  }
 
   if (SSN_DETECTION_PATTERN.test(text)) {
     violations.push('Direct Social Security Number (SSN) pattern detected in candidate payload.');

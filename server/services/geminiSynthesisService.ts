@@ -67,6 +67,14 @@ async function callGeminiWithTimeout<T>(operation: () => Promise<T>, timeoutMs =
   }
 }
 
+interface RawTopConcern {
+  title: string;
+  category: string;
+  severity: string;
+  evidenceSnippet: string;
+  strategicImplication: string;
+}
+
 export class GeminiSynthesisService {
   /**
    * FEATURE #1: Synthesize Plain-English Explanation for a verified finding.
@@ -80,7 +88,11 @@ export class GeminiSynthesisService {
       throw new Error(`Privacy boundary violation: ${piiCheck.reason}`);
     }
 
-    const cacheKey = globalSynthesisCache.generateKey('explain', request);
+    const normalizedRequest = {
+      ...request,
+      exactExcerpt: request.exactExcerpt.trim(),
+    };
+    const cacheKey = globalSynthesisCache.generateKey('explain', normalizedRequest);
 
     return globalSynthesisCache.execute(cacheKey, async () => {
       const client = getGeminiClient();
@@ -149,7 +161,11 @@ Explain what this clause means in simple, clear language. Identify the key strat
       throw new Error(`Privacy boundary violation: ${piiCheck.reason}`);
     }
 
-    const cacheKey = globalSynthesisCache.generateKey('balanced', request);
+    const normalizedRequest = {
+      ...request,
+      exactClause: request.exactClause.trim(),
+    };
+    const cacheKey = globalSynthesisCache.generateKey('balanced', normalizedRequest);
 
     return globalSynthesisCache.execute(cacheKey, async () => {
       const client = getGeminiClient();
@@ -302,7 +318,8 @@ Distinguish factual evidence from suggested inquiry.`;
       // Must verify that evidenceSnippet is an exact verbatim substring of the supplied findings.
       // If unverified, replace with a verified excerpt from the finding to guarantee zero hallucinated evidence.
       const defaultVerifiedExcerpt = request.sanitizedFindings[0]?.sanitizedExcerpt || '';
-      const verifiedTopConcerns = (parsed.topConcerns || []).map((concern: any) => {
+      const rawConcerns = (parsed.topConcerns as RawTopConcern[] | undefined) || [];
+      const verifiedTopConcerns = rawConcerns.map((concern: RawTopConcern) => {
         const matchingFinding = request.sanitizedFindings.find(
           (f) =>
             isVerbatimSubstring(f.sanitizedExcerpt, concern.evidenceSnippet) ||
@@ -331,12 +348,18 @@ Distinguish factual evidence from suggested inquiry.`;
   public async answerDocumentQuestion(
     request: DocumentQARequest
   ): Promise<DocumentQAResponse> {
-    // 0. Privacy boundary check on verified excerpts
+    // 0a. Privacy boundary check on verified excerpts
     for (const excerpt of request.verifiedExcerpts) {
       const piiCheck = auditTextForUnredactedPii(excerpt.excerptText);
       if (!piiCheck.isClean) {
         throw new Error(`Privacy boundary violation in excerpt [${excerpt.sectionId}]: ${piiCheck.reason}`);
       }
+    }
+
+    // 0b. Privacy boundary check on user inquiry
+    const queryPiiCheck = auditTextForUnredactedPii(request.userQuery);
+    if (!queryPiiCheck.isClean) {
+      throw new Error(`Privacy boundary violation in inquiry: ${queryPiiCheck.reason}`);
     }
 
     // 1. Audit user query for prompt injection or unauthorized legal advice attempts
@@ -350,7 +373,12 @@ Distinguish factual evidence from suggested inquiry.`;
       };
     }
 
-    const cacheKey = globalSynthesisCache.generateKey('qa', request);
+    // Stabilize cache key payload by sorting excerpts by sectionId
+    const normalizedRequest = {
+      userQuery: request.userQuery.trim(),
+      verifiedExcerpts: [...request.verifiedExcerpts].sort((a, b) => a.sectionId.localeCompare(b.sectionId)),
+    };
+    const cacheKey = globalSynthesisCache.generateKey('qa', normalizedRequest);
 
     return globalSynthesisCache.execute(cacheKey, async () => {
       const client = getGeminiClient();

@@ -6,6 +6,7 @@ const PHONE_REGEX = /(?:\+?1[-.\s]?)?\(?[0-9]{3}\)?[-.\s]?[0-9]{3}[-.\s]?[0-9]{4
 const SSN_REGEX = /\b\d{3}[-\s]\d{2}[-\s]\d{4}\b/g;
 const AADHAAR_REGEX = /\b\d{4}[-\s]\d{4}[-\s]\d{4}\b/g;
 const PAN_REGEX = /\b[A-Z]{5}[0-9]{4}[A-Z]\b/g;
+const CREDIT_CARD_REGEX = /\b(?:\d{4}[-\s]?){3}\d{4}\b|\b\d{4}[-\s]?\d{6}[-\s]?\d{5}\b/g;
 const BANK_ACCOUNT_REGEX = /\b(?:account|acct|acc)[#:\s]*([0-9]{9,18})\b/gi;
 const FINANCIAL_REGEX = /\$\s?\d{1,3}(?:,\d{3})*(?:\.\d{2})?(?:\s?(?:USD|dollars))?\b/gi;
 const ADDRESS_REGEX = /\b\d{1,5}\s+(?:[A-Z][a-z0-9.]+\s+){1,4}(?:Street|St|Avenue|Ave|Boulevard|Blvd|Road|Rd|Drive|Dr|Lane|Ln|Court|Ct|Way)\b(?:,?\s+(?:Apt|Suite|Unit|#)\s*[A-Za-z0-9]+)?(?:,?\s+[A-Z][a-zA-Z\s]+,\s*[A-Z]{2}\s*\d{5})?/gi;
@@ -26,6 +27,7 @@ export function scrubPII(
     AADHAAR: 1,
     PAN: 1,
     BANK_ACCOUNT: 1,
+    CREDIT_CARD: 1,
     FINANCIAL: 1,
     ADDRESS: 1,
   };
@@ -60,6 +62,7 @@ export function scrubPII(
     }
   }
 
+  collectEntities(CREDIT_CARD_REGEX, 'CREDIT_CARD', 'CARD_NUM');
   collectEntities(SSN_REGEX, 'SSN', 'ID_SSN');
   collectEntities(AADHAAR_REGEX, 'AADHAAR', 'ID_AADHAAR');
   collectEntities(PAN_REGEX, 'PAN', 'ID_PAN');

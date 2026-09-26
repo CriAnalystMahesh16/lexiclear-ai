@@ -1,10 +1,10 @@
-import React, { useState, useMemo, useEffect, useRef } from 'react';
+import React, { useState, useMemo, useEffect, useRef, useDeferredValue } from 'react';
 import { 
   FileText, Shield, AlertTriangle, BookOpen, CheckSquare, 
   HelpCircle, Download, Printer, RefreshCw, Eye, EyeOff, 
   ChevronRight, ArrowRight, Scale, Sparkles, MessageSquare, 
   Copy, Check, Search, Filter, Lock, CheckCircle2,
-  Sun, Moon, Upload, AlertOctagon, AlertCircle
+  Sun, Moon, Upload, AlertOctagon, AlertCircle, GitCompare
 } from 'lucide-react';
 import { SAMPLE_CONTRACTS, SampleContract } from './data/sampleContracts';
 import { scrubPII } from './engine/piiScrubber';
@@ -19,10 +19,11 @@ import { DocumentIntake } from './components/intake/DocumentIntake';
 import { ClauseInspector } from './components/clause/ClauseInspector';
 import { AttorneyBriefPanel } from './components/docket/AttorneyBriefPanel';
 import { DocumentQAPanel } from './components/qa/DocumentQAPanel';
+import { ContractDiffViewer } from './components/diff/ContractDiffViewer';
 
 export default function App() {
   const [theme, setTheme] = useState<'light' | 'dark'>('light');
-  const [activeTab, setActiveTab] = useState<'editor' | 'overview' | 'comparator' | 'obligations' | 'docket'>('editor');
+  const [activeTab, setActiveTab] = useState<'editor' | 'overview' | 'comparator' | 'obligations' | 'docket' | 'diff'>('editor');
   const [selectedSample, setSelectedSample] = useState<string>('freelance_msa');
   const [contractText, setContractText] = useState<string>(SAMPLE_CONTRACTS[0].content);
   const [perspective, setPerspective] = useState<UserPerspective>('service_provider_or_contractor');
@@ -47,7 +48,7 @@ export default function App() {
   }, [isAssistantOpen]);
 
   // Arrow key navigation between tabs
-  const tabsList = ['editor', 'overview', 'comparator', 'obligations', 'docket'] as const;
+  const tabsList = ['editor', 'overview', 'comparator', 'obligations', 'docket', 'diff'] as const;
   const handleTabKeyDown = (e: React.KeyboardEvent) => {
     const currentIndex = tabsList.indexOf(activeTab);
     if (e.key === 'ArrowRight') {
@@ -63,15 +64,18 @@ export default function App() {
     }
   };
 
+  // Deferred value prevents synchronous full-document re-scanning on every keystroke
+  const deferredContractText = useDeferredValue(contractText);
+
   // Client-Side PII Scrubbing
   const piiResult = useMemo(() => {
-    return scrubPII(contractText, 'doc-active', 'contract', perspective);
-  }, [contractText, perspective]);
+    return scrubPII(deferredContractText, 'doc-active', 'contract', perspective);
+  }, [deferredContractText, perspective]);
 
   // Document Segmentation
   const segments: ClauseSegment[] = useMemo(() => {
-    return segmentDocument(contractText, piiResult.redactedText);
-  }, [contractText, piiResult.redactedText]);
+    return segmentDocument(deferredContractText, piiResult.redactedText);
+  }, [deferredContractText, piiResult.redactedText]);
 
   // Deterministic Analysis Engine
   const analysisResult: AnalysisResult = useMemo(() => {
@@ -277,7 +281,28 @@ export default function App() {
                 <span className={`absolute bottom-[-20px] left-0 right-0 h-0.5 ${isDark ? 'bg-emerald-500' : 'bg-emerald-700'}`} />
               )}
             </button>
+
+            <button
+              id="tab-diff"
+              role="tab"
+              aria-selected={activeTab === 'diff'}
+              aria-controls="panel-diff"
+              onKeyDown={handleTabKeyDown}
+              onClick={() => setActiveTab('diff')}
+              className={`py-1 transition-colors relative flex items-center gap-1.5 focus-visible:ring-2 focus-visible:ring-emerald-500 rounded ${
+                activeTab === 'diff' 
+                  ? (isDark ? 'text-emerald-400 font-semibold' : 'text-emerald-700 font-bold') 
+                  : (isDark ? 'hover:text-slate-200 text-slate-400' : 'hover:text-slate-950 text-slate-700')
+              }`}
+            >
+              <GitCompare className="w-3.5 h-3.5" />
+              6. Revision Diff
+              {activeTab === 'diff' && (
+                <span className={`absolute bottom-[-20px] left-0 right-0 h-0.5 ${isDark ? 'bg-emerald-500' : 'bg-emerald-700'}`} />
+              )}
+            </button>
           </nav>
+
 
           {/* Header Action Tools */}
           <div className="flex items-center gap-2">
@@ -400,6 +425,14 @@ export default function App() {
           >
             Brief
           </button>
+          <button
+            role="tab"
+            aria-selected={activeTab === 'diff'}
+            onClick={() => setActiveTab('diff')}
+            className={activeTab === 'diff' ? 'font-bold text-emerald-600' : 'text-slate-500'}
+          >
+            Diff
+          </button>
         </div>
       </header>
 
@@ -427,6 +460,7 @@ export default function App() {
               onScanContract={handleScanContract}
               uploadError={uploadError}
               setUploadError={setUploadError}
+              onOpenRevisionDiff={() => setActiveTab('diff')}
             />
           </section>
         )}
@@ -483,7 +517,7 @@ export default function App() {
                         <AlertOctagon className="w-3.5 h-3.5" /> Critical / High
                       </span>
                       <span className="font-mono font-bold">
-                        {analysisResult.findings.filter(f => f.level === 'CRITICAL' || f.level === 'HIGH').length}
+                        {analysisResult.findings.filter(f => (f.riskLevel || f.level) === 'CRITICAL' || (f.riskLevel || f.level) === 'HIGH').length}
                       </span>
                     </div>
                     <div className="flex items-center justify-between">
@@ -491,7 +525,7 @@ export default function App() {
                         <AlertCircle className="w-3.5 h-3.5" /> Moderate
                       </span>
                       <span className="font-mono font-bold">
-                        {analysisResult.findings.filter(f => f.level === 'MODERATE').length}
+                        {analysisResult.findings.filter(f => (f.riskLevel || f.level) === 'MODERATE').length}
                       </span>
                     </div>
                     <div className="flex items-center justify-between">
@@ -499,7 +533,7 @@ export default function App() {
                         <CheckCircle2 className="w-3.5 h-3.5" /> Standard / Low
                       </span>
                       <span className="font-mono font-bold">
-                        {analysisResult.findings.filter(f => f.level === 'LOW').length}
+                        {analysisResult.findings.filter(f => (f.riskLevel || f.level) === 'LOW').length}
                       </span>
                     </div>
                   </div>
@@ -577,7 +611,7 @@ export default function App() {
                   >
                     <div className="space-y-1">
                       <div className="flex items-center gap-2">
-                        <RiskBadge level={finding.level} showIcon={false} className="text-[10px] py-0 px-1" />
+                        <RiskBadge level={finding.riskLevel || finding.level || 'LOW'} showIcon={false} className="text-[10px] py-0 px-1" />
                         <span className={`text-xs font-semibold ${isDark ? 'text-slate-200' : 'text-slate-900'}`}>
                           {finding.plainEnglishSummary}
                         </span>
@@ -685,6 +719,20 @@ export default function App() {
               documentTitle={currentSampleContract.title}
               analysisResult={analysisResult}
               perspective={perspective}
+            />
+          </section>
+        )}
+
+        {/* =========================================================================
+            STAGE 6: CONTRACT REVISION DIFF & REDLINE COMPARATOR (Problem Alignment)
+           ========================================================================= */}
+        {activeTab === 'diff' && (
+          <section id="panel-diff" role="tabpanel" aria-labelledby="tab-diff" tabIndex={0}>
+            <ContractDiffViewer
+              theme={theme}
+              originalContractText={contractText}
+              perspective={perspective}
+              onClose={() => setActiveTab('editor')}
             />
           </section>
         )}

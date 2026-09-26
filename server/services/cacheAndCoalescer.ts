@@ -20,9 +20,7 @@ interface CacheEntry<T> {
  * Fixes the issue where native JSON.stringify with an array replacer strips nested properties.
  */
 export function canonicalJsonStringify(val: unknown): string {
-  if (val === null || typeof val !== 'object') {
-    return JSON.stringify(val);
-  }
+  if (val === null || typeof val !== "object") return JSON.stringify(val);
   if (Array.isArray(val)) {
     return '[' + val.map(canonicalJsonStringify).join(',') + ']';
   }

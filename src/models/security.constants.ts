@@ -24,6 +24,15 @@ export const SECURITY_LIMITS = {
 
   /** Minimum characters for a valid contract document */
   MIN_DOCUMENT_SIZE_CHARS: 20,
+
+  /** Rate limiter sliding window in milliseconds (1 minute) */
+  RATE_LIMIT_WINDOW_MS: 60 * 1000,
+
+  /** Maximum requests allowable per rate limit window */
+  MAX_REQUESTS_PER_WINDOW: 60,
+
+  /** Maximum tracked client IP entries in memory to prevent unbounded memory growth */
+  MAX_TRACKED_CLIENTS: 5000,
 } as const;
 
 export const ALLOWED_RISK_LEVELS = [
@@ -51,6 +60,10 @@ export const ALLOWED_PII_TYPES = [
   'EMAIL',
   'PHONE',
   'SSN',
+  'AADHAAR',
+  'PAN',
+  'BANK_ACCOUNT',
+  'CREDIT_CARD',
   'FINANCIAL',
   'ADDRESS'
 ] as const;

@@ -12,13 +12,14 @@ import {
   enforceJsonAndSize,
   safeErrorHandler,
 } from './middleware/security';
+import { SECURITY_LIMITS } from '../src/models/security.constants';
 
 export function createExpressApp() {
   const app = express();
 
   // 1. Core Security Middlewares
   app.use(securityHeaders);
-  app.use(express.json({ limit: '1mb' }));
+  app.use(express.json({ limit: SECURITY_LIMITS.MAX_API_PAYLOAD_SIZE_BYTES }));
   app.use(enforceJsonAndSize);
   app.use(rateLimiter);
 

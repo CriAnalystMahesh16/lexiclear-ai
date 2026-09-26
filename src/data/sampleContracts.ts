@@ -84,3 +84,23 @@ Information shall not be excluded from confidentiality unless Receiving Party pr
 Receiving Party acknowledges that any breach of this Agreement will cause irreparable injury to Disclosing Party for which monetary damages are inadequate. Disclosing Party shall be entitled to seek immediate injunctive relief without the necessity of posting a bond. Receiving Party shall pay all legal costs, court expenses, and attorneys' fees incurred by Disclosing Party in enforcing this Agreement.`
   }
 ];
+
+export const SAMPLE_REVISION_COUNTER_OFFER = `INDEPENDENT CONTRACTOR AGREEMENT (PROPOSED REVISION 2)
+
+This Agreement is entered into on October 15, 2026, between Apex Global Media LLC ("Client") and Jane Doe ("Contractor").
+
+1. SERVICES AND COMPENSATION
+Client agrees to pay Contractor an hourly rate of $95.00. Invoices shall be payable on a Net-30 basis upon delivery of milestone reports. Client shall provide written notice of any disputed charges within ten (10) business days.
+
+2. PROPRIETARY RIGHTS AND BACKGROUND TECHNOLOGY
+Contractor retains all rights, title, and interest in and to Contractor's pre-existing software tools, routines, libraries, and frameworks. Upon receipt of full payment, Contractor transfers to Client all exclusive ownership of the customized project Deliverables created specifically for Client.
+
+3. MUTUAL INDEMNIFICATION AND LIABILITY CAP
+Each party shall indemnify, defend, and hold harmless the other party from third-party claims arising directly from material breach of this Agreement or gross negligence. Neither party's aggregate monetary liability under this Agreement shall exceed total fees paid or payable in the twelve (12) months preceding the claim.
+
+4. MUTUAL TERMINATION AND NOTICE TO CURE
+Either party may terminate this Agreement upon thirty (30) days prior written notice. In the event of an alleged breach, the non-breaching party shall provide fourteen (14) days written notice and opportunity to cure before declaring default.
+
+5. DISPUTE RESOLUTION AND GOVERNING LAW
+Any dispute shall first be submitted to good-faith executive negotiation for fifteen (15) days. If unresolved, disputes shall be settled through neutral arbitration in Austin, TX, with each party bearing its own legal fees and equally sharing arbitrator expenses.`;
+

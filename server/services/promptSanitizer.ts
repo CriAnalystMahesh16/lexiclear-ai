@@ -33,6 +33,8 @@ const RAW_EMAIL_PATTERN = /\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}\b/;
 const RAW_PHONE_PATTERN = /(?<!\d)(?:\+?1[-.\s]?)?\(?[0-9]{3}\)?[-.\s]?[0-9]{3}[-.\s]?[0-9]{4}(?!\d)/;
 const RAW_AADHAAR_PATTERN = /\b\d{4}[-\s]\d{4}[-\s]\d{4}\b/;
 const RAW_PAN_PATTERN = /\b[A-Z]{5}[0-9]{4}[A-Z]\b/;
+const RAW_CREDIT_CARD_PATTERN = /\b(?:\d{4}[-\s]?){3}\d{4}\b|\b\d{4}[-\s]?\d{6}[-\s]?\d{5}\b/;
+const RAW_BANK_ACCOUNT_PATTERN = /\b(?:account|acct|acc)[#:\s]*([0-9]{9,18})\b/i;
 
 export interface InjectionAudit {
   readonly isFlagged: boolean;
@@ -66,6 +68,12 @@ export function auditTextForUnredactedPii(text: string): { isClean: boolean; rea
   }
   if (RAW_PAN_PATTERN.test(text)) {
     return { isClean: false, reason: 'Direct unredacted PAN identifier detected.' };
+  }
+  if (RAW_CREDIT_CARD_PATTERN.test(text)) {
+    return { isClean: false, reason: 'Direct unredacted credit card number detected.' };
+  }
+  if (RAW_BANK_ACCOUNT_PATTERN.test(text)) {
+    return { isClean: false, reason: 'Direct unredacted bank account number detected.' };
   }
   if (RAW_EMAIL_PATTERN.test(text)) {
     return { isClean: false, reason: 'Direct unredacted email address detected.' };

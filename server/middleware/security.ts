@@ -19,16 +19,46 @@ interface ClientRateRecord {
   resetTime: number;
 }
 
+interface HttpPayloadError {
+  type?: string;
+  status?: number;
+  statusCode?: number;
+  message?: string;
+}
+
 const clientRates = new Map<string, ClientRateRecord>();
-const RATE_WINDOW_MS = 60 * 1000; // 1 minute
-const MAX_REQUESTS_PER_WINDOW = 60; // 60 requests/minute
+const RATE_WINDOW_MS = SECURITY_LIMITS.RATE_LIMIT_WINDOW_MS ?? 60 * 1000;
+const MAX_REQUESTS_PER_WINDOW = SECURITY_LIMITS.MAX_REQUESTS_PER_WINDOW ?? 60;
+const MAX_TRACKED_CLIENTS = SECURITY_LIMITS.MAX_TRACKED_CLIENTS ?? 5000;
 
 /**
- * In-memory sliding rate limiter.
+ * Periodically or capacity-triggered cleanup of expired rate limiter records to prevent unbounded memory growth.
+ */
+function pruneExpiredRateRecords(now: number): void {
+  if (clientRates.size < MAX_TRACKED_CLIENTS) {
+    return;
+  }
+  for (const [ip, record] of clientRates.entries()) {
+    if (record.resetTime < now) {
+      clientRates.delete(ip);
+    }
+  }
+  // If still above capacity under flood, drop oldest entry
+  while (clientRates.size >= MAX_TRACKED_CLIENTS) {
+    const oldestKey = clientRates.keys().next().value;
+    if (oldestKey) clientRates.delete(oldestKey);
+    else break;
+  }
+}
+
+/**
+ * In-memory sliding rate limiter with bounded memory growth.
  */
 export function rateLimiter(req: Request, res: Response, next: NextFunction): void {
   const ip = req.ip || req.socket.remoteAddress || 'unknown-client';
   const now = Date.now();
+
+  pruneExpiredRateRecords(now);
 
   let record = clientRates.get(ip);
   if (!record || record.resetTime < now) {
@@ -69,6 +99,10 @@ export function securityHeaders(_req: Request, res: Response, next: NextFunction
   res.setHeader('X-Frame-Options', 'SAMEORIGIN');
   res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
   res.setHeader('X-XSS-Protection', '1; mode=block');
+  res.setHeader(
+    'Content-Security-Policy',
+    "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self'; font-src 'self' data:;"
+  );
   next();
 }
 
@@ -113,10 +147,11 @@ export function enforceJsonAndSize(req: Request, res: Response, next: NextFuncti
  * Global safe error handler - prevents stack trace leakage and properly formats errors.
  */
 export function safeErrorHandler(err: unknown, _req: Request, res: Response, _next: NextFunction): void {
+  const payloadErr = (typeof err === 'object' && err !== null ? err : {}) as HttpPayloadError;
   const isOversized =
-    (err as any)?.type === 'entity.too.large' ||
-    (err as any)?.status === 413 ||
-    (err as any)?.statusCode === 413;
+    payloadErr.type === 'entity.too.large' ||
+    payloadErr.status === 413 ||
+    payloadErr.statusCode === 413;
 
   const errorMessage = err instanceof Error ? err.message : 'An internal processing error occurred.';
   const isTimeout = errorMessage.toLowerCase().includes('timed out');

@@ -1,7 +1,8 @@
 import React, { useRef } from 'react';
 import { 
   FileText, Upload, Shield, Eye, EyeOff, Lock, CheckCircle2, 
-  AlertTriangle, Clock, Hash, Layers, Sparkles, RefreshCw, ArrowRight 
+  AlertTriangle, Clock, Hash, Layers, Sparkles, RefreshCw, ArrowRight,
+  GitCompare 
 } from 'lucide-react';
 import { SAMPLE_CONTRACTS, SampleContract } from '../../data/sampleContracts';
 import { ClauseSegment, UserPerspective } from '../../types/document';
@@ -23,6 +24,7 @@ interface DocumentIntakeProps {
   onScanContract: () => void;
   uploadError: string | null;
   setUploadError: (err: string | null) => void;
+  onOpenRevisionDiff?: () => void;
 }
 
 const MAX_CHAR_LIMIT = 500000;
@@ -43,6 +45,7 @@ export const DocumentIntake: React.FC<DocumentIntakeProps> = ({
   onScanContract,
   uploadError,
   setUploadError,
+  onOpenRevisionDiff,
 }) => {
   const isDark = theme === 'dark';
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -316,6 +319,22 @@ export const DocumentIntake: React.FC<DocumentIntakeProps> = ({
                 {showUnmaskedPII ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
                 <span>{showUnmaskedPII ? 'Viewing Raw Input (Local Only)' : 'Viewing Redacted Preview'}</span>
               </button>
+
+              {onOpenRevisionDiff && (
+                <button
+                  type="button"
+                  onClick={onOpenRevisionDiff}
+                  className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg border transition-colors ${
+                    isDark 
+                      ? 'bg-slate-800 border-emerald-700/80 text-emerald-300 hover:bg-slate-700' 
+                      : 'bg-emerald-50 border-emerald-300 text-emerald-900 hover:bg-emerald-100 shadow-2xs'
+                  }`}
+                  title="Compare this contract side-by-side with a counter-offer or revision"
+                >
+                  <GitCompare className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
+                  <span>Compare Revision (Diff)</span>
+                </button>
+              )}
             </div>
 
             {/* Run Audit Button */}

@@ -46,6 +46,7 @@ export function runDeterministicRuleScan(
             id: `find-${findings.length + 1}`,
             clauseId: seg.id,
             category: rule.category,
+            riskLevel: rule.severity,
             level: rule.severity,
             exactQuote: candidateQuote,
             plainEnglishSummary: rule.explanation,
@@ -75,7 +76,7 @@ export function runDeterministicRuleScan(
   // Calculate score via centralized risk scorer
   const scoreResult = calculateDeterministicRiskScore({
     findings,
-    asymmetryCount: findings.filter((f) => f.level === 'CRITICAL' || f.level === 'HIGH').length > 1 ? 1 : 0,
+    asymmetryCount: findings.filter((f) => (f.riskLevel || f.level) === 'CRITICAL' || (f.riskLevel || f.level) === 'HIGH').length > 1 ? 1 : 0,
   });
 
   const missingProtections: string[] = [];

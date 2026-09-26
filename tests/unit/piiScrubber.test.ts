@@ -33,6 +33,18 @@ describe('Zero-Knowledge PII Scrubber Engine', () => {
     expect(result.entities.length).toBe(3);
   });
 
+  it('should detect and redact credit card numbers in both detector and scrubber', () => {
+    const rawCardText = 'Payment card number 4111-2222-3333-4444 on file.';
+    const scrubbed = scrubPII(rawCardText);
+    expect(scrubbed.redactedText).not.toContain('4111-2222-3333-4444');
+    expect(scrubbed.redactedText).toContain('[CARD_NUM_1]');
+
+    const detected = detectAndRedactPii(rawCardText);
+    expect(detected.redactedText).not.toContain('4111-2222-3333-4444');
+    expect(detected.redactedText).toContain('[CARD_NUM_1]');
+    expect(detected.entityCounts['CREDIT_CARD']).toBe(1);
+  });
+
   it('should rehydrate text correctly from the local redaction map', () => {
     const rawContract = 'Contact support@testcorp.com for $5,000 refund.';
     const result = scrubPII(rawContract);
