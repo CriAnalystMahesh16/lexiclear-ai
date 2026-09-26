@@ -13,9 +13,11 @@ Legal documents are frequently dense, one-sided, and inaccessible to everyday in
 1. **Simplifies Complex Legal Documents**: Delivers plain-English explanations of opaque clauses.
 2. **Highlights Important Risks & Obligations**: Scans contracts deterministically across 6 core risk domains to flag liabilities, notice windows, and asymmetric covenants.
 3. **Proposes Balanced Alternatives**: Formulates bilateral, commercially reasonable counter-proposals as negotiation starting points.
-4. **Answers Document-Grounded Questions**: Provides bounded legal document Q&A grounded strictly in verified source text offsets.
-5. **Prepares Users for Legal Counsel**: Synthesizes a structured Attorney Consultation Brief with executive summaries, prioritized concerns, and specific questions for counsel.
-6. **Maintains Clear Self-Help Boundaries**: Features persistent statutory disclaimers communicating that LexiClear AI provides informational self-help assistance, **not** legal representation or formal legal advice.
+4. **Compares Contract Revisions (Redline Engine)**: 100% deterministic side-by-side revision differ categorizing clauses into Added, Removed, Changed, and Unchanged, computing quantitative risk deltas and eliminated hazard findings with zero external API calls.
+5. **Generates Strategic Negotiation Trade-off Matrices**: Prioritizes contract terms into Must-Have Walk-Aways, Moderate Compromises, and Standard Accept terms for empowered negotiation.
+6. **Answers Document-Grounded Questions**: Provides bounded legal document Q&A grounded strictly in verified source text offsets.
+7. **Prepares Users for Legal Counsel**: Synthesizes a structured Attorney Consultation Brief with executive summaries, prioritized concerns, trade-off matrices, and specific questions for counsel.
+8. **Maintains Clear Self-Help Boundaries**: Features persistent statutory disclaimers communicating that LexiClear AI provides informational self-help assistance, **not** legal representation or formal legal advice.
 
 ---
 
@@ -37,6 +39,9 @@ LexiClear AI enforces a strict three-tier provenance model to ensure that genera
 │  - Asymmetry & Missing Safeguard Detection             │
 │  - Verbatim Substring Quote Verification               │
 │  - Client-Side PII Tokenization & Redaction            │
+│  - Deterministic Jaccard Clause Revision Differ        │
+│  - Quantitative Risk Delta & Tier Transition Math      │
+│  - Negotiation Trade-off Priority Triaging             │
 └───────────────────────────┬────────────────────────────┘
                             │ (Only sanitized excerpts transmitted)
 ┌───────────────────────────▼────────────────────────────┐
@@ -68,22 +73,54 @@ To protect user confidentiality, LexiClear AI ensures that **raw contracts never
 
 ---
 
-## 4. Deterministic Legal Knowledge Catalog
+## 4. Contract Revision Diff & Redline Engine
 
-The deterministic analysis engine inspects documents across 6 high-stakes commercial categories:
-
-| Category | Typical Trap Identified | Balanced Alternative Proposed |
-| :--- | :--- | :--- |
-| **Liability & Indemnification** | Unilateral defense burdens, uncapped liability | Mutual indemnification with 12-month fee cap |
-| **Intellectual Property** | Work-for-hire overreach, loss of pre-existing tools | Background technology carve-out & payment triggers |
-| **Termination & Notice** | Immediate termination without cause, 90-day locks | Mutual 30-day notice with 14-day cure window |
-| **Dispute Resolution** | Mandatory arbitration, jury waiver, distant venue | Small claims carve-out, home state venue |
-| **Payment & Withholding** | Subjective satisfaction clauses, Net-90 terms | Objective acceptance criteria, Net-30 terms |
-| **Restrictive Covenants** | Post-termination non-competes, broad non-solicits | Narrow direct-client non-solicitation only |
+The **Contract Version Diff** engine (`src/engine/contractDiffer.ts`) provides a deterministic, zero-latency revision analysis tool:
+- **Structural Clause Alignment**: Pairs clauses between original and revised contracts using token-level Jaccard similarity index.
+- **Modification Categorization**:
+  - `UNCHANGED`: Retained exact or near-exact phrasing.
+  - `CHANGED`: Substantially modified clause language requiring review.
+  - `ADDED`: Newly introduced clauses not present in original draft.
+  - `REMOVED`: Deleted clauses, highlighting potential loss of protections.
+- **Quantitative Risk Delta**:
+  - Automatically calculates net risk score impact (`scoreDelta`, e.g., `-38 pts`).
+  - Displays risk tier transitions (e.g., `CRITICAL ➔ MODERATE`).
+  - Flags eliminated hazard findings that were successfully resolved in the counter-proposal.
+  - Identifies newly introduced risks in added clauses.
+- **1-Click Counter-Proposal Preset**: Includes pre-loaded balanced counter-offers for instant side-by-side evaluation alongside manual custom revision input.
 
 ---
 
-## 5. Gemini API Semantic Endpoints
+## 5. Strategic Negotiation Trade-off Matrix
+
+Embedded directly into the **Attorney Consultation Brief** and docket export (`src/components/docket/AttorneyBriefPanel.tsx`):
+
+| Negotiation Tier | Strategic Objective | Typical Provisions |
+| :--- | :--- | :--- |
+| **High Leverage / Must-Have** | Non-negotiable walk-away positions to eliminate catastrophic liability | Uncapped indemnification, unilateral liability, non-compete clauses, total IP assignment |
+| **Moderate Compromise** | Reasonable concessions and trade-off points during discussions | Payment payment terms (Net-45 vs Net-30), cure notice windows (15 vs 30 days), governing law |
+| **Standard Accept** | Commercially standard boilerplate accepted without expenditure of negotiation capital | Severability, counterpart execution, standard electronic notices, force majeure definition |
+
+Exports seamlessly into formatted Markdown dossiers ready to hand to legal counsel.
+
+---
+
+## 6. Deterministic Legal Knowledge Catalog & Market Benchmarks
+
+The deterministic analysis engine inspects documents across 6 high-stakes commercial categories with market standard benchmarks:
+
+| Category | Typical Trap Identified | Market Benchmark | Balanced Alternative Proposed |
+| :--- | :--- | :--- | :--- |
+| **Liability & Indemnification** | Unilateral defense burdens, uncapped liability | Mutual liability capped at 12 months fees paid | Mutual indemnification with 12-month fee cap |
+| **Intellectual Property** | Work-for-hire overreach, loss of pre-existing tools | Client owns deliverables; vendor retains pre-existing tools | Background technology carve-out & payment triggers |
+| **Termination & Notice** | Immediate termination without cause, 90-day locks | 30 days written notice with 14-30 day cure period | Mutual 30-day notice with 14-day cure window |
+| **Dispute Resolution** | Mandatory arbitration, jury waiver, distant venue | Mutual venue in shared location or mutual home state | Small claims carve-out, home state venue |
+| **Payment & Withholding** | Subjective satisfaction clauses, Net-90 terms | Net-30 days with explicit invoice dispute mechanism | Objective acceptance criteria, Net-30 terms |
+| **Restrictive Covenants** | Post-termination non-competes, broad non-solicits | Direct-client solicitation ban only; zero non-compete | Narrow direct-client non-solicitation only |
+
+---
+
+## 7. Gemini API Semantic Endpoints
 
 All AI operations run as server-side proxy routes via the official `@google/genai` SDK:
 
@@ -94,13 +131,13 @@ All AI operations run as server-side proxy routes via the official `@google/gena
 3. **`POST /api/ai/ask-document`**:
    - Answers specific user questions grounded strictly in verified document section excerpts. Rejects out-of-context queries with an insufficient-information disclaimer.
 4. **`POST /api/ai/attorney-brief`**:
-   - Compiles an executive summary, prioritized risk matrix, and consultation agenda for formal legal review.
+   - Compiles an executive summary, prioritized risk matrix, trade-off matrix, and consultation agenda for formal legal review.
 
 ---
 
-## 6. Performance & Security Hardening
+## 8. Performance & Security Hardening
 
-- **Bundle Optimization**: Rolldown-compatible vendor splitting separates React and Lucide icons into standalone chunks, reducing the core application bundle to **217 kB**.
+- **Bundle Optimization**: Rolldown-compatible vendor splitting separates React and Lucide icons into standalone chunks, maintaining a lean, ultra-fast initial load.
 - **Canonical SHA-256 Hashing**: Recursive JSON key sorting guarantees deterministic cache keys for nested payloads.
 - **In-Flight Request Coalescing**: Deduplicates simultaneous identical AI queries, preventing redundant API calls.
 - **Pre-Compiled Regular Expressions**: Module-level regex constants eliminate repeated regex re-compilation during clause parsing.
@@ -109,31 +146,31 @@ All AI operations run as server-side proxy routes via the official `@google/gena
 
 ---
 
-## 7. Accessibility (WCAG 2.1 AA Compliant)
+## 9. Accessibility (WCAG 2.1 AA Compliant)
 
 - **Skip Navigation**: Accessible top-level skip link enables keyboard users to bypass navigation and jump directly to `#main-content`.
 - **Semantic Landmark Structure**: `header`, `nav`, `main`, `section`, `article`, `aside`, and `footer`.
 - **WAI-ARIA Tablist Navigation**: Complete `role="tablist"`, `role="tab"`, `aria-selected`, and `role="tabpanel"` semantics with keyboard arrow navigation (`ArrowLeft` / `ArrowRight`).
-- **Focus Management**: Focus is automatically directed into the Q&A input upon opening and restored to the triggering button upon drawer close.
-- **Escape Key Dismissal**: Drawer can be closed instantly via the `Escape` key.
+- **Focus Management**: Focus is automatically directed into active views and restored to triggering buttons on panel dismissal.
+- **Keyboard Shortcuts**: Full keyboard access across all 6 studio panels with single-key quick navigation and `Escape` handlers.
 - **Reduced Motion Support**: All spinners and transitions respect `prefers-reduced-motion: reduce`.
 - **Color Independence & High Contrast**: Risk levels pair distinct iconography and text badges with colors exceeding the 4.5:1 WCAG contrast ratio in both Light and Dark themes.
 
 ---
 
-## 8. Verification Results
+## 10. Verification Results
 
 ```text
-✓ Vitest Test Suite:      79 passed across 9 test files (0 failures)
+✓ Vitest Test Suite:      80 passed across 9 test files (0 failures)
 ✓ TypeScript Compilation: 0 errors (npx tsc --noEmit)
-✓ Production Build:       Vite build successful in ~741ms (chunks: 217.76 kB app, 404 kB react, 27 kB icons)
+✓ Production Build:       Vite build successful in ~931ms
 ✓ Applet Compilation:     compile_applet build succeeded
 ✓ Code Linter:            lint_applet clean (0 lint warnings/errors)
 ```
 
 ---
 
-## 9. Google Cloud Run Deployment & Production Operations
+## 11. Google Cloud Run Deployment & Production Operations
 
 ### Environment Variables
 | Variable | Required | Description |
@@ -169,4 +206,3 @@ gcloud run deploy lexiclear-ai \
   --set-secrets GEMINI_API_KEY=projects/YOUR_PROJECT/secrets/gemini-api-key:latest
 ```
 *Note: In Google Cloud Run, `PORT` is automatically injected by the environment (defaulting to 8080) and the Express server automatically binds to `0.0.0.0:${PORT}`.*
-
