@@ -386,48 +386,60 @@ export default function App() {
           className="md:hidden border-t px-4 py-2 flex items-center justify-between overflow-x-auto text-xs gap-3"
         >
           <button
+            id="tab-mobile-editor"
             role="tab"
             aria-selected={activeTab === 'editor'}
+            aria-controls="panel-editor"
             onClick={() => setActiveTab('editor')}
             className={activeTab === 'editor' ? 'font-bold text-emerald-600' : 'text-slate-500'}
           >
             Studio
           </button>
           <button
+            id="tab-mobile-overview"
             role="tab"
             aria-selected={activeTab === 'overview'}
+            aria-controls="panel-overview"
             onClick={() => setActiveTab('overview')}
             className={activeTab === 'overview' ? 'font-bold text-emerald-600' : 'text-slate-500'}
           >
             Overview ({analysisResult.overallRiskScore})
           </button>
           <button
+            id="tab-mobile-comparator"
             role="tab"
             aria-selected={activeTab === 'comparator'}
+            aria-controls="panel-comparator"
             onClick={() => setActiveTab('comparator')}
             className={activeTab === 'comparator' ? 'font-bold text-emerald-600' : 'text-slate-500'}
           >
             Inspector ({analysisResult.findings.length})
           </button>
           <button
+            id="tab-mobile-obligations"
             role="tab"
             aria-selected={activeTab === 'obligations'}
+            aria-controls="panel-obligations"
             onClick={() => setActiveTab('obligations')}
             className={activeTab === 'obligations' ? 'font-bold text-emerald-600' : 'text-slate-500'}
           >
             Obligations
           </button>
           <button
+            id="tab-mobile-docket"
             role="tab"
             aria-selected={activeTab === 'docket'}
+            aria-controls="panel-docket"
             onClick={() => setActiveTab('docket')}
             className={activeTab === 'docket' ? 'font-bold text-emerald-600' : 'text-slate-500'}
           >
             Brief
           </button>
           <button
+            id="tab-mobile-diff"
             role="tab"
             aria-selected={activeTab === 'diff'}
+            aria-controls="panel-diff"
             onClick={() => setActiveTab('diff')}
             className={activeTab === 'diff' ? 'font-bold text-emerald-600' : 'text-slate-500'}
           >

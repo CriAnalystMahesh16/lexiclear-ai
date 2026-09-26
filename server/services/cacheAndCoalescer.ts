@@ -69,6 +69,9 @@ export class RequestCacheAndCoalescer {
     if (cached) {
       if (cached.expiresAt > now) {
         this.hitCount++;
+        // Refresh entry position to most recent in Map (true LRU)
+        this.cache.delete(key);
+        this.cache.set(key, cached);
         return cached.value;
       }
       this.cache.delete(key);
